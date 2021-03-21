@@ -30,7 +30,7 @@ metaHost=localhost
 portList=9090,9092,9094
 maxConnToUse=5
 messagesBuffer=10000
-parsedMsgBuffer=1000000
+parsedMsgBuffer=1000000  // these now work
 syslogMode1isFront2IsBack3IsBoth=3
 randomString=RandomString
 #  Hey there

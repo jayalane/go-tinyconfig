@@ -73,11 +73,18 @@ func addConfigFromReader(reader io.Reader, config *Config) error {
 
 		// check if the line has = sign
 		// and process the line. Ignore the rest.
-		if equal := strings.Index(line, "="); equal >= 0 {
-			if key := strings.TrimSpace(line[:equal]); len(key) > 0 {
+		slashSlash := strings.Index(line, "//")
+		var l string
+		if slashSlash >= 0 {
+			l = line[:slashSlash]
+		} else {
+			l = line
+		}
+		if equal := strings.Index(l, "="); equal >= 0 {
+			if key := strings.TrimSpace(l[:equal]); len(key) > 0 {
 				value := ""
-				if len(line) > equal {
-					value = strings.TrimSpace(line[equal+1:])
+				if len(l) > equal {
+					value = strings.TrimSpace(l[equal+1:])
 				}
 				// assign the config map
 				bool := true

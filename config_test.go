@@ -10,6 +10,7 @@ numConfig=4
 numList=1,2,3
 boolConfig=true
 stringConfig=Chris Lane
+testSlashSlash = 3 // number should be 3 not 0
 # test comment
 `
 
@@ -22,8 +23,12 @@ func TestSortTime(t *testing.T) {
 		t.Log("Couldn't parse default config", err)
 		t.Fail()
 	}
-	if 4 != config["numConfig"].IntVal {
+	if 3 != config["testSlashSlash"].IntVal {
 		t.Log("Expected 3 got", config["numConfig"].IntVal)
+		t.Fail()
+	}
+	if 4 != config["numConfig"].IntVal {
+		t.Log("Expected 4 got", config["numConfig"].IntVal)
 		t.Fail()
 	}
 	if !config["boolConfig"].BoolVal {
