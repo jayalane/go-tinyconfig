@@ -52,6 +52,10 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	defer file.Close()
 	fileReader := bufio.NewReader(file)
 	err = addConfigFromReader(fileReader, &config)
+	if err != nil {
+		log.Println("Warning: can't use config file, using defaults,", filename, filePath, err.Error())
+		return config, err
+	}
 	return config, nil
 }
 
