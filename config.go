@@ -25,6 +25,7 @@ type StringOrInt struct {
 type Config map[string]StringOrInt
 
 // ReadConfig takes a default config and overrides it from ./config.txt file.
+// if filename is "", then don't read a file
 func ReadConfig(filename string, defaultConfig string) (Config, error) {
 
 	config := Config{}
