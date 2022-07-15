@@ -14,6 +14,7 @@ import (
 )
 
 // StringOrInt is a value with .StrVal, .IntVal and .BoolVal methods.
+// Parsing happens at file read time not use time
 type StringOrInt struct {
 	StrVal  string
 	IntVal  int
@@ -31,11 +32,11 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	strReader := strings.NewReader(defaultConfig)
 	err := addConfigFromReader(strReader, &config)
 	if err != nil {
-		return config, nil
+		return nil, err
 	}
 
 	if len(filename) == 0 {
-		log.Println("No config file specified, using default", filename)
+		log.Println("No config file specified, using default")
 		return config, nil
 	}
 	binaryFilename, err := os.Executable()
@@ -59,6 +60,7 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	return config, nil
 }
 
+// addConfigFromReader merges the parsed config from reader into Config
 func addConfigFromReader(reader io.Reader, config *Config) error {
 
 	scanner := bufio.NewScanner(reader)
