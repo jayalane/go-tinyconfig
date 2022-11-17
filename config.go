@@ -45,8 +45,15 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 		panic(err)
 	}
 	filePath := path.Join(path.Dir(binaryFilename), filename)
+
 	file, err := os.Open(filePath)
+	// non-existing is not fatal
+
 	if err != nil {
+		if os.IsNotExist(err) {
+			log.Println(filePath, "does not exist, using defaults")
+			return config, nil
+		}
 		log.Println("Warning: can't open config file, using defaults,", filename, filePath, err.Error())
 		return config, err
 	}
