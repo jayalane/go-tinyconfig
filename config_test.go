@@ -8,6 +8,7 @@ import "strings"
 var defaultConfig = `#
 numConfig=4
 numList=1,2,3
+float= 6.4 // ok
 boolConfig=true
 stringConfig=Chris Lane
 testSlashSlash = 3 // number should be 3 not 0
@@ -33,6 +34,10 @@ func TestSortTime(t *testing.T) {
 	}
 	if !config["boolConfig"].BoolVal {
 		t.Log("Expected true got", config["boolConfig"].BoolVal)
+		t.Fail()
+	}
+	if 6.4 != config["float"].Float64Val {
+		t.Log("Expected 6.4 got", config["float"].Float64Val)
 		t.Fail()
 	}
 	if "Chris Lane" != config["stringConfig"].StrVal {

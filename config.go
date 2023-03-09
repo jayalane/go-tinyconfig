@@ -16,9 +16,10 @@ import (
 // StringOrInt is a value with .StrVal, .IntVal and .BoolVal methods.
 // Parsing happens at file read time not use time
 type StringOrInt struct {
-	StrVal  string
-	IntVal  int
-	BoolVal bool
+	StrVal     string
+	IntVal     int
+	BoolVal    bool
+	Float64Val float64
 }
 
 // Config is a string-key to string/int/boolean value map.
@@ -101,6 +102,8 @@ func addConfigFromReader(reader io.Reader, config *Config) error {
 					value = strings.TrimSpace(l[equal+1:])
 				}
 				// assign the config map
+
+				//bool
 				bool := true
 				if value == "true" {
 					bool = true
@@ -109,12 +112,18 @@ func addConfigFromReader(reader io.Reader, config *Config) error {
 					bool = false
 					value = "0"
 				}
+				// int
 				num, err := strconv.Atoi(value)
 				if err != nil {
-					(*config)[key] = StringOrInt{value, 0, bool}
-				} else {
-					(*config)[key] = StringOrInt{value, num, bool}
+					num = 0
 				}
+
+				//float64
+				f64, err := strconv.ParseFloat(value, 64)
+				if err != nil {
+					f64 = 0.0
+				}
+				(*config)[key] = StringOrInt{value, num, bool, f64}
 				log.Println("Setting config", key, "to", value)
 
 			}

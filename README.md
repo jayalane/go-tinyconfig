@@ -19,7 +19,7 @@ are the options and defaults.
 
 I like it.  
 
-*What is it? *
+*What is it?*
 
 ```
 var theConfig config.Config
