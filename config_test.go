@@ -15,6 +15,8 @@ testSlashSlash = 3 // number should be 3 not 0
 # test comment
 `
 
+// TODO some kind of testing of the actual file names and so on.  
+
 func TestSortTime(t *testing.T) {
 	config := Config{}
 
@@ -36,7 +38,7 @@ func TestSortTime(t *testing.T) {
 		t.Log("Expected true got", config["boolConfig"].BoolVal)
 		t.Fail()
 	}
-	if 6.4 != config["float"].Float64Val {
+	if 6.4 != config["float"].Float64Val { // is == test ok?
 		t.Log("Expected 6.4 got", config["float"].Float64Val)
 		t.Fail()
 	}

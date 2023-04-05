@@ -36,10 +36,34 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = readConfigFromFile(filename, &config)
+	if err != nil {
+		return config, err
+	}
+	envVarStruct, ok := config["configEnvVar"]
+	if !ok {
+		return config, err
+	}
+
+	envFileName := getEnvVarName(envVarStruct.StrVal, filename)
+	err = readConfigFromFile(envFileName, &config)
+
+	return config, err
+}
+
+func getEnvVarName(envToken string, filename string) string {
+	if !strings.Contains(filename, ".") {
+		return filename + "_" + envToken
+	}
+	segments := strings.SplitN(filename, ".", 2)
+	return segments[0] + "_" + envToken + "." + segments[1]
+}
+
+func readConfigFromFile(filename string, config *Config) error {
 
 	if len(filename) == 0 {
 		log.Println("No config file specified, using default")
-		return config, nil
+		return nil
 	}
 	binaryFilename, err := os.Executable()
 	if err != nil {
@@ -53,20 +77,20 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Println(filePath, "does not exist, using defaults")
-			return config, nil
+			return nil
 		}
 		log.Println("Warning: can't open config file, using defaults,", filename, filePath, err.Error())
-		return config, err
+		return err
 	}
 	log.Println("Using config file", filePath)
 	defer file.Close()
 	fileReader := bufio.NewReader(file)
-	err = addConfigFromReader(fileReader, &config)
+	err = addConfigFromReader(fileReader, config)
 	if err != nil {
 		log.Println("Warning: can't use config file, using defaults,", filename, filePath, err.Error())
-		return config, err
+		return err
 	}
-	return config, nil
+	return nil
 }
 
 // addConfigFromReader merges the parsed config from reader into Config

@@ -12,8 +12,22 @@ have something that allows for that without forcing opinions on every
 bit of code in the call stack.  That's my diatribe.  This library is a
 super short bit of code that builds a map of strings to strings with
 default values and an easy way to find out from the command line what
-are the options and defaults.  
+are the options and defaults.
 
+First little feature creep: I've added a key "configEnvVar" which if
+set in config.txt will make the code load a file "config_$configEnvVar.txt"
+
+e.g.:
+
+config.txt has this line:
+
+```
+configEnvVar = PROD
+```
+
+then config_PROD.txt will be loaded after and overriding config.txt.
+This enables docker images to be generated, one image that runs with different
+configs in different environments (e.g. QA vs. PROD).  
 
 *Is it good to use?*
 
