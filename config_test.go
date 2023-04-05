@@ -15,7 +15,7 @@ testSlashSlash = 3 // number should be 3 not 0
 # test comment
 `
 
-// TODO some kind of testing of the actual file names and so on.  
+// TODO some kind of testing of the actual file names and so on.
 
 func TestSortTime(t *testing.T) {
 	config := Config{}

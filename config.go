@@ -1,6 +1,10 @@
 // -*- tab-width: 2 -*-
 
-// Package config implements a simple key-value config system that reads from disk with passed in defaults.
+// Package config implements a simple key-value config system that reads
+// from disk with passed in defaults.
+
+// I used this file to test GPT-4 but it was not totally successful.
+
 package config
 
 import (
@@ -13,6 +17,9 @@ import (
 	"strings"
 )
 
+// Config is a string-key to string/int/boolean value map.
+type Config map[string]StringOrInt
+
 // StringOrInt is a value with .StrVal, .IntVal and .BoolVal methods.
 // Parsing happens at file read time not use time
 type StringOrInt struct {
@@ -22,11 +29,21 @@ type StringOrInt struct {
 	Float64Val float64
 }
 
-// Config is a string-key to string/int/boolean value map.
-type Config map[string]StringOrInt
+func getEnvVarFilename(envToken string, filename string) string {
+	if !strings.Contains(filename, ".") {
+		return filename + "_" + envToken
+	}
+	segments := strings.SplitN(filename, ".", 2)
+	return segments[0] + "_" + envToken + "." + segments[1]
+}
 
-// ReadConfig takes a default config and overrides it from ./config.txt file.
-// if filename is "", then don't read a file
+// ReadConfig takes a default config and overrides it from
+// ./config.txt file.  if filename is "", then don't read a file; if
+// config.txt has a "configEnvVar" setting, it will check the
+// environment for a key equal to the vlaue of that setting; if
+// present, it will use the value of that environment variable to make
+// another file name, e.g. config_PROD.txt and open that file and add
+// it to the config.
 func ReadConfig(filename string, defaultConfig string) (Config, error) {
 
 	config := Config{}
@@ -36,35 +53,39 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = readConfigFromFile(filename, &config)
-	if err != nil {
-		return config, err
-	}
-	envVarStruct, ok := config["configEnvVar"]
-	if !ok {
-		return config, err
-	}
-
-	envFileName := getEnvVarName(envVarStruct.StrVal, filename)
-	err = readConfigFromFile(envFileName, &config)
-
-	return config, err
-}
-
-func getEnvVarName(envToken string, filename string) string {
-	if !strings.Contains(filename, ".") {
-		return filename + "_" + envToken
-	}
-	segments := strings.SplitN(filename, ".", 2)
-	return segments[0] + "_" + envToken + "." + segments[1]
-}
-
-func readConfigFromFile(filename string, config *Config) error {
 
 	if len(filename) == 0 {
 		log.Println("No config file specified, using default")
-		return nil
+		return config, nil
 	}
+
+	err = readConfigFile(filename, &config)
+	if err != nil {
+		log.Println("Warning: can't use config file, using defaults,",
+			filename, err.Error())
+		return config, err
+	}
+
+	// Check for the "configEnvVar" key in the config
+	envVarKey, ok := config["configEnvVar"]
+	if !ok {
+		return config, nil
+	}
+	envVarName := envVarKey.StrVal
+	envVarValue := os.Getenv(envVarName)
+	if envVarValue != "" {
+		envfilename := getEnvVarFilename(envVarValue, filename)
+		err = readConfigFile(envfilename, &config)
+		if err != nil {
+			log.Println("Warning: can't use second config file, using defaults,",
+				envfilename, err.Error())
+			return config, err
+		}
+	}
+	return config, nil
+}
+
+func readConfigFile(filename string, config *Config) error {
 	binaryFilename, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -72,8 +93,6 @@ func readConfigFromFile(filename string, config *Config) error {
 	filePath := path.Join(path.Dir(binaryFilename), filename)
 
 	file, err := os.Open(filePath)
-	// non-existing is not fatal
-
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Println(filePath, "does not exist, using defaults")
@@ -82,7 +101,6 @@ func readConfigFromFile(filename string, config *Config) error {
 		log.Println("Warning: can't open config file, using defaults,", filename, filePath, err.Error())
 		return err
 	}
-	log.Println("Using config file", filePath)
 	defer file.Close()
 	fileReader := bufio.NewReader(file)
 	err = addConfigFromReader(fileReader, config)
@@ -90,6 +108,7 @@ func readConfigFromFile(filename string, config *Config) error {
 		log.Println("Warning: can't use config file, using defaults,", filename, filePath, err.Error())
 		return err
 	}
+
 	return nil
 }
 
