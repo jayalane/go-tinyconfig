@@ -71,8 +71,10 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	if !ok {
 		return config, nil
 	}
+	log.Println("Found configEnvVar", envVarKey.StrVal)
 	envVarName := envVarKey.StrVal
 	envVarValue := os.Getenv(envVarName)
+	log.Println("Found configEnvVar value", envVarValue)
 	if envVarValue != "" {
 		envfilename := getEnvVarFilename(envVarValue, filename)
 		err = readConfigFile(envfilename, &config)
@@ -101,6 +103,7 @@ func readConfigFile(filename string, config *Config) error {
 		log.Println("Warning: can't open config file, using defaults,", filename, filePath, err.Error())
 		return err
 	}
+	log.Println("Reading config file", filePath)
 	defer file.Close()
 	fileReader := bufio.NewReader(file)
 	err = addConfigFromReader(fileReader, config)
