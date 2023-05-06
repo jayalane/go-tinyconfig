@@ -2,8 +2,11 @@
 
 package config
 
-import "testing"
-import "strings"
+import (
+	"os"
+	"strings"
+	"testing"
+)
 
 var defaultConfig = `#
 numConfig=4
@@ -14,6 +17,12 @@ stringConfig=Chris Lane
 testSlashSlash = 3 // number should be 3 not 0
 # test comment
 `
+
+var (
+	envVarKeyPrefix = "TINYCONFIG_OVERRIDE_"
+	envVarKey       = "sigma_3"
+	envVarValue     = "3.2"
+)
 
 // TODO some kind of testing of the actual file names and so on.
 
@@ -50,4 +59,19 @@ func TestSortTime(t *testing.T) {
 		t.Log("Expected 3 1,2,3 got", strings.Split(config["numList"].StrVal, ","))
 		t.Fail()
 	}
+	if 0 != config[envVarKey].Float64Val {
+		t.Log("Env var override beforeenv set",
+			config[envVarKey].Float64Val,
+			"should be zero")
+		t.Fail()
+	}
+	os.Setenv(envVarKeyPrefix+envVarKey, envVarValue)
+	overrideConfigFromEnv(&config)
+	if 3.2 != config[envVarKey].Float64Val {
+		t.Log("Env var override beforeenv set",
+			config[envVarKey].Float64Val,
+			"should be 3.2")
+		t.Fail()
+	}
+
 }

@@ -66,7 +66,7 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 		return config, err
 	}
 
-	// Check for the "configEnvVar" key in the config
+	// first featyure: Check for the "configEnvVar" key in the config
 	envVarKey, ok := config["configEnvVar"]
 	if !ok {
 		return config, nil
@@ -84,6 +84,10 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 			return config, err
 		}
 	}
+
+	// second feature
+	overrideConfigFromEnv(&config)
+
 	return config, nil
 }
 
@@ -92,6 +96,7 @@ func readConfigFile(filename string, config *Config) error {
 	if err != nil {
 		panic(err)
 	}
+
 	filePath := path.Join(path.Dir(binaryFilename), filename)
 
 	file, err := os.Open(filePath)
@@ -103,16 +108,40 @@ func readConfigFile(filename string, config *Config) error {
 		log.Println("Warning: can't open config file, using defaults,", filename, filePath, err.Error())
 		return err
 	}
+
 	log.Println("Reading config file", filePath)
 	defer file.Close()
+
 	fileReader := bufio.NewReader(file)
+
 	err = addConfigFromReader(fileReader, config)
 	if err != nil {
 		log.Println("Warning: can't use config file, using defaults,", filename, filePath, err.Error())
+
 		return err
 	}
 
 	return nil
+}
+
+// overrideConfigFromEnv makes a little config
+// file from the env and returns a reader to it.
+func overrideConfigFromEnv(config *Config) {
+	var res strings.Builder
+
+	e := os.Environ()
+
+	for _, v := range e {
+		if strings.HasPrefix(v, "TINYCONFIG_OVERRIDE_") {
+			configK := v[len("TINYCONFIG_OVERRIDE_"):]
+
+			log.Println("Env override Setting config", configK)
+			res.WriteString(configK)
+		}
+	}
+	strReader := strings.NewReader(res.String())
+
+	_ = addConfigFromReader(strReader, config)
 }
 
 // addConfigFromReader merges the parsed config from reader into Config

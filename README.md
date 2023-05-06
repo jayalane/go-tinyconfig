@@ -29,6 +29,14 @@ then config_PROD.txt will be loaded after and overriding config.txt.
 This enables docker images to be generated, one image that runs with different
 configs in different environments (e.g. QA vs. PROD).  
 
+Second little feature creep: For each key in a file it is parsing, it
+will check any environment variables named like
+"TINYCONFIG_OVERRIDE_*" and set a key, equal to whatever * matches,
+set equal to the value of the env variable.  It does this check after
+everything else happens (so it won't cause a reload of the files in
+feature creep number one.  
+
+
 *Is it good to use?*
 
 I like it.  
