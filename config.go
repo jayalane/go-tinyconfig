@@ -56,20 +56,20 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 
 	if len(filename) == 0 {
 		log.Println("No config file specified, using default")
-		return config, nil
+		goto checkEnviron
 	}
 
 	err = readConfigFile(filename, &config)
 	if err != nil {
 		log.Println("Warning: can't use config file, using defaults,",
 			filename, err.Error())
-		return config, err
+		goto checkEnviron
 	}
 
 	// first featyure: Check for the "configEnvVar" key in the config
 	envVarKey, ok := config["configEnvVar"]
 	if !ok {
-		return config, nil
+		goto checkEnviron
 	}
 	log.Println("Found configEnvVar", envVarKey.StrVal)
 	envVarName := envVarKey.StrVal
@@ -81,14 +81,16 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 		if err != nil {
 			log.Println("Warning: can't use second config file, using defaults,",
 				envfilename, err.Error())
-			return config, err
+			goto checkEnviron
 		}
 	}
+
+checkEnviron:
 
 	// second feature
 	overrideConfigFromEnv(&config)
 
-	return config, nil
+	return config, err
 }
 
 func readConfigFile(filename string, config *Config) error {
