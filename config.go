@@ -45,6 +45,12 @@ func getEnvVarFilename(envToken string, filename string) string {
 // another file name, e.g. config_PROD.txt and open that file and add
 // it to the config.
 func ReadConfig(filename string, defaultConfig string) (Config, error) {
+	var (
+		envVarKey   StringOrInt
+		envVarName  string
+		envVarValue string
+		ok          bool
+	)
 
 	config := Config{}
 
@@ -67,13 +73,13 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	}
 
 	// first featyure: Check for the "configEnvVar" key in the config
-	envVarKey, ok := config["configEnvVar"]
+	envVarKey, ok = config["configEnvVar"]
 	if !ok {
 		goto checkEnviron
 	}
 	log.Println("Found configEnvVar", envVarKey.StrVal)
-	envVarName := envVarKey.StrVal
-	envVarValue := os.Getenv(envVarName)
+	envVarName = envVarKey.StrVal
+	envVarValue = os.Getenv(envVarName)
 	log.Println("Found configEnvVar value", envVarValue)
 	if envVarValue != "" {
 		envfilename := getEnvVarFilename(envVarValue, filename)
