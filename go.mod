@@ -1,3 +1,3 @@
 module github.com/jayalane/go-tinyconfig
 
-go 1.21
+go 1.22.5

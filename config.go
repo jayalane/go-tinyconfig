@@ -9,6 +9,7 @@ package config
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -17,11 +18,15 @@ import (
 	"strings"
 )
 
+const (
+	fileNameSegs = 2
+)
+
 // Config is a string-key to string/int/boolean value map.
 type Config map[string]StringOrInt
 
 // StringOrInt is a value with .StrVal, .IntVal and .BoolVal methods.
-// Parsing happens at file read time not use time
+// Parsing happens at file read time not use time.
 type StringOrInt struct {
 	StrVal     string
 	IntVal     int
@@ -33,8 +38,10 @@ func getEnvVarFilename(envToken string, filename string) string {
 	if !strings.Contains(filename, ".") {
 		return filename + "_" + envToken
 	}
-	segments := strings.SplitN(filename, ".", 2)
-	return segments[0] + "_" + envToken + "." + segments[1]
+
+	segments := strings.SplitN(filename, ".", fileNameSegs)
+
+	return segments[0] + "_" + envToken + "." + segments[fileNameSegs-1]
 }
 
 // ReadConfig takes a default config and overrides it from
@@ -53,8 +60,8 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	)
 
 	config := Config{}
-
 	strReader := strings.NewReader(defaultConfig)
+
 	err := addConfigFromReader(strReader, &config)
 	if err != nil {
 		return nil, err
@@ -62,6 +69,7 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 
 	if len(filename) == 0 {
 		log.Println("No config file specified, using default")
+
 		goto checkEnviron
 	}
 
@@ -69,6 +77,7 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	if err != nil {
 		log.Println("Warning: can't use config file, using defaults,",
 			filename, err.Error())
+
 		goto checkEnviron
 	}
 
@@ -77,16 +86,22 @@ func ReadConfig(filename string, defaultConfig string) (Config, error) {
 	if !ok {
 		goto checkEnviron
 	}
+
 	log.Println("Found configEnvVar", envVarKey.StrVal)
+
 	envVarName = envVarKey.StrVal
 	envVarValue = os.Getenv(envVarName)
+
 	log.Println("Found configEnvVar value", envVarValue)
+
 	if envVarValue != "" {
 		envfilename := getEnvVarFilename(envVarValue, filename)
+
 		err = readConfigFile(envfilename, &config)
 		if err != nil {
 			log.Println("Warning: can't use second config file, using defaults,",
 				envfilename, err.Error())
+
 			goto checkEnviron
 		}
 	}
@@ -111,13 +126,17 @@ func readConfigFile(filename string, config *Config) error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Println(filePath, "does not exist, using defaults")
+
 			return nil
 		}
+
 		log.Println("Warning: can't open config file, using defaults,", filename, filePath, err.Error())
+
 		return err
 	}
 
 	log.Println("Reading config file", filePath)
+
 	defer file.Close()
 
 	fileReader := bufio.NewReader(file)
@@ -147,70 +166,83 @@ func overrideConfigFromEnv(config *Config) {
 			res.WriteString(configK)
 		}
 	}
+
 	strReader := strings.NewReader(res.String())
 
 	_ = addConfigFromReader(strReader, config)
 }
 
-// addConfigFromReader merges the parsed config from reader into Config
-func addConfigFromReader(reader io.Reader, config *Config) error {
+func getValues(l string, equal int) StringOrInt {
+	value := ""
+	if len(l) > equal {
+		value = strings.TrimSpace(l[equal+1:])
+	}
+	// assign the config map
 
+	// bool
+	boolVal := true
+	if value == "true" {
+		boolVal = true
+		value = "1"
+	} else if value == "false" {
+		boolVal = false
+		value = "0"
+	}
+
+	// int
+	num, err := strconv.Atoi(value)
+	if err != nil {
+		num = 0
+	}
+
+	// float64
+	f64, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		f64 = 0.0
+	}
+
+	return StringOrInt{value, num, boolVal, f64}
+}
+
+// addConfigFromReader merges the parsed config from reader into Config.
+func addConfigFromReader(reader io.Reader, config *Config) error {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := scanner.Text()
+
 		if err := scanner.Err(); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			log.Println("Error reading config", err)
+
 			return err
 		}
-		if len(line) > 0 && line[:1] == "#" { // TODO  space space #
+
+		if len(line) > 0 && line[:1] == "#" { // later space and a space #
 			continue
 		}
 
 		// check if the line has = sign
 		// and process the line. Ignore the rest.
-		slashSlash := strings.Index(line, "//")
 		var l string
+
+		slashSlash := strings.Index(line, "//")
 		if slashSlash >= 0 {
 			l = line[:slashSlash]
 		} else {
 			l = line
 		}
+
 		if equal := strings.Index(l, "="); equal >= 0 {
 			if key := strings.TrimSpace(l[:equal]); len(key) > 0 {
-				value := ""
-				if len(l) > equal {
-					value = strings.TrimSpace(l[equal+1:])
-				}
-				// assign the config map
-
-				//bool
-				bool := true
-				if value == "true" {
-					bool = true
-					value = "1"
-				} else if value == "false" {
-					bool = false
-					value = "0"
-				}
-				// int
-				num, err := strconv.Atoi(value)
-				if err != nil {
-					num = 0
-				}
-
-				//float64
-				f64, err := strconv.ParseFloat(value, 64)
-				if err != nil {
-					f64 = 0.0
-				}
-				(*config)[key] = StringOrInt{value, num, bool, f64}
-				log.Println("Setting config", key, "to", value)
-
+				vv := getValues(l, equal)
+				(*config)[key] = vv
+				log.Println("Setting config", key, "to", vv.StrVal)
 			}
 		}
 	}
+
 	return nil
 }

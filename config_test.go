@@ -3,7 +3,6 @@
 package config
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
@@ -24,54 +23,62 @@ var (
 	envVarValue     = "3.2"
 )
 
-// TODO some kind of testing of the actual file names and so on.
+// later some kind of testing of the actual file names and so on.
 
 func TestSortTime(t *testing.T) {
 	config := Config{}
-
 	strReader := strings.NewReader(defaultConfig)
+
 	err := addConfigFromReader(strReader, &config)
 	if err != nil {
 		t.Log("Couldn't parse default config", err)
 		t.Fail()
 	}
-	if 3 != config["testSlashSlash"].IntVal {
+
+	if config["testSlashSlash"].IntVal != 3 {
 		t.Log("Expected 3 got", config["numConfig"].IntVal)
 		t.Fail()
 	}
-	if 4 != config["numConfig"].IntVal {
+
+	if config["numConfig"].IntVal != 4 {
 		t.Log("Expected 4 got", config["numConfig"].IntVal)
 		t.Fail()
 	}
+
 	if !config["boolConfig"].BoolVal {
 		t.Log("Expected true got", config["boolConfig"].BoolVal)
 		t.Fail()
 	}
-	if 6.4 != config["float"].Float64Val { // is == test ok?
+
+	if config["float"].Float64Val != 6.4 { // is == test ok?
 		t.Log("Expected 6.4 got", config["float"].Float64Val)
 		t.Fail()
 	}
-	if "Chris Lane" != config["stringConfig"].StrVal {
+
+	if config["stringConfig"].StrVal != "Chris Lane" {
 		t.Log("Expected 3 got", config["stringConfig"].StrVal)
 		t.Fail()
 	}
-	if 3 != len(strings.Split(config["numList"].StrVal, ",")) {
+
+	if len(strings.Split(config["numList"].StrVal, ",")) != 3 {
 		t.Log("Expected 3 1,2,3 got", strings.Split(config["numList"].StrVal, ","))
 		t.Fail()
 	}
-	if 0 != config[envVarKey].Float64Val {
+
+	if config[envVarKey].Float64Val != 0 {
 		t.Log("Env var override beforeenv set",
 			config[envVarKey].Float64Val,
 			"should be zero")
 		t.Fail()
 	}
-	os.Setenv(envVarKeyPrefix+envVarKey, envVarValue)
+
+	t.Setenv(envVarKeyPrefix+envVarKey, envVarValue)
 	overrideConfigFromEnv(&config)
-	if 3.2 != config[envVarKey].Float64Val {
+
+	if config[envVarKey].Float64Val != 3.2 {
 		t.Log("Env var override beforeenv set",
 			config[envVarKey].Float64Val,
 			"should be 3.2")
 		t.Fail()
 	}
-
 }
