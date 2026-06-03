@@ -3,6 +3,8 @@
 package config
 
 import (
+	"os"
+	"path"
 	"strings"
 	"testing"
 )
@@ -79,6 +81,43 @@ func TestSortTime(t *testing.T) {
 		t.Log("Env var override beforeenv set",
 			config[envVarKey].Float64Val,
 			"should be 3.2")
+		t.Fail()
+	}
+}
+
+// TestPerBinaryConfigFallback verifies that when config.txt is absent,
+// ReadConfig falls back to "${binary_name}_config.txt" sitting next to
+// the executable.
+func TestPerBinaryConfigFallback(t *testing.T) {
+	binaryFilename, err := os.Executable()
+	if err != nil {
+		t.Fatal("can't find executable", err)
+	}
+
+	dir := path.Dir(binaryFilename)
+
+	// Skip if a real config.txt happens to live beside the test binary,
+	// since that would be used instead of the fallback.
+	if _, err := os.Stat(path.Join(dir, "config.txt")); err == nil {
+		t.Skip("config.txt exists beside test binary; skipping fallback test")
+	}
+
+	fallback := path.Join(dir, path.Base(binaryFilename)+"_config.txt")
+
+	err = os.WriteFile(fallback, []byte("numConfig=99\n"), 0o600)
+	if err != nil {
+		t.Fatal("can't write fallback config", err)
+	}
+
+	defer os.Remove(fallback)
+
+	config, err := ReadConfig("config.txt", defaultConfig)
+	if err != nil {
+		t.Fatal("ReadConfig failed", err)
+	}
+
+	if config["numConfig"].IntVal != 99 {
+		t.Log("Expected fallback override 99 got", config["numConfig"].IntVal)
 		t.Fail()
 	}
 }

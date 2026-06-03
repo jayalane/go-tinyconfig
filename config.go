@@ -120,7 +120,20 @@ func readConfigFile(filename string, config *Config) error {
 		panic(err)
 	}
 
-	filePath := path.Join(path.Dir(binaryFilename), filename)
+	dir := path.Dir(binaryFilename)
+	filePath := path.Join(dir, filename)
+
+	// If the default-named file (e.g. config.txt or config_PROD.txt) is
+	// missing, fall back to a per-binary name (e.g. myapp_config.txt or
+	// myapp_config_PROD.txt) so multiple binaries can share one directory.
+	if _, statErr := os.Stat(filePath); os.IsNotExist(statErr) {
+		fallback := path.Join(dir, path.Base(binaryFilename)+"_"+filename)
+		if _, statErr := os.Stat(fallback); statErr == nil {
+			log.Println(filePath, "does not exist, using", fallback)
+
+			filePath = fallback
+		}
+	}
 
 	file, err := os.Open(filePath)
 	if err != nil {
