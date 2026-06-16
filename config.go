@@ -194,10 +194,10 @@ func getValues(l string, equal int) StringOrInt {
 
 	// bool
 	boolVal := true
-	if value == "true" {
+	if value == "true" || value == "1" {
 		boolVal = true
 		value = "1"
-	} else if value == "false" {
+	} else if value == "false" || value == "0" {
 		boolVal = false
 		value = "0"
 	}
@@ -221,7 +221,7 @@ func getValues(l string, equal int) StringOrInt {
 func addConfigFromReader(reader io.Reader, config *Config) error {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
-		line := scanner.Text()
+		line1 := scanner.Text()
 
 		if err := scanner.Err(); err != nil {
 			if errors.Is(err, io.EOF) {
@@ -233,24 +233,34 @@ func addConfigFromReader(reader io.Reader, config *Config) error {
 			return err
 		}
 
-		if len(line) > 0 && line[:1] == "#" { // later space and a space #
+		if len(line1) > 0 && line1[:1] == "#" { // later space and a space #
 			continue
+		}
+
+		var line2 string
+		// allow for mid-line # comments
+		midHash := strings.Index(line1, "#")
+		if midHash >= 1 {
+			line2 = line1[:midHash]
+		} else {
+			line2 = line1
+		}
+
+		var line string
+
+		// allow // style comments
+		slashSlash := strings.Index(line2, "//")
+		if slashSlash >= 0 {
+			line = line2[:slashSlash]
+		} else {
+			line = line2
 		}
 
 		// check if the line has = sign
 		// and process the line. Ignore the rest.
-		var l string
-
-		slashSlash := strings.Index(line, "//")
-		if slashSlash >= 0 {
-			l = line[:slashSlash]
-		} else {
-			l = line
-		}
-
-		if equal := strings.Index(l, "="); equal >= 0 {
-			if key := strings.TrimSpace(l[:equal]); len(key) > 0 {
-				vv := getValues(l, equal)
+		if equal := strings.Index(line, "="); equal >= 0 {
+			if key := strings.TrimSpace(line[:equal]); len(key) > 0 {
+				vv := getValues(line, equal)
 				(*config)[key] = vv
 				log.Println("Setting config", key, "to", vv.StrVal)
 			}

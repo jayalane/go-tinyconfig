@@ -12,7 +12,8 @@ tidy:
 	go mod tidy
 
 test:
-	go test ./... -v -v -race -coverprofile fmtcoverage.html
+	go test ./... -v -v -race -coverprofile coverage.out
+	go tool cover -html=coverage.out -o coverage.html
 	gotestsum  --junitfile junit.xml ./...
 	cat junit.xml
 

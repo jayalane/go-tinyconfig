@@ -14,8 +14,12 @@ numConfig=4
 numList=1,2,3
 float= 6.4 // ok
 boolConfig=true
+boolConfig2 = 1
+falseBoolConfig = false
+falseBoolConfig2 = 0  # testing midline hash
 stringConfig=Chris Lane
 testSlashSlash = 3 // number should be 3 not 0
+sigma_3 = 4.0
 # test comment
 `
 
@@ -52,6 +56,21 @@ func TestSortTime(t *testing.T) {
 		t.Fail()
 	}
 
+	if !config["boolConfig2"].BoolVal {
+		t.Log("Expected true got", config["boolConfig2"].BoolVal)
+		t.Fail()
+	}
+
+	if config["falseBoolConfig"].BoolVal {
+		t.Log("Expected false got", config["falseBoolConfig"].BoolVal)
+		t.Fail()
+	}
+
+	if config["falseBoolConfig2"].BoolVal {
+		t.Log("Expected false got", config["falseBoolConfig2"].BoolVal)
+		t.Fail()
+	}
+
 	if config["float"].Float64Val != 6.4 { // is == test ok?
 		t.Log("Expected 6.4 got", config["float"].Float64Val)
 		t.Fail()
@@ -67,7 +86,7 @@ func TestSortTime(t *testing.T) {
 		t.Fail()
 	}
 
-	if config[envVarKey].Float64Val != 0 {
+	if config[envVarKey].Float64Val != 4.0 {
 		t.Log("Env var override beforeenv set",
 			config[envVarKey].Float64Val,
 			"should be zero")
